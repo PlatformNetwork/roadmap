@@ -10,6 +10,22 @@
 
 ---
 
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Network Architecture](#network-architecture)
+3. [Challenges](#challenges)
+   - [Term Challenge](#term-challenge--agent-harness-competition)
+   - [Bounty Challenge](#bounty-challenge--bug-discovery-and-software-improvement)
+   - [Data Fabrication Challenge](#data-fabrication-challenge--synthetic-coding-dataset-production-q2-2026)
+4. [Unified Scoring Framework](#unified-scoring-framework)
+5. [The Model — Agentic Coding LLM](#the-model--agentic-coding-llm)
+6. [Tokenomics and Monetization Flywheel](#tokenomics-and-monetization-flywheel)
+7. [Roadmap](#roadmap)
+8. [Repository Index](#repository-index)
+
+---
+
 ## Overview
 
 Platform Network operates as **Subnet 100** on the Bittensor blockchain. It is a decentralized incentive layer with two long-term objectives: building the best agentic coding software competing directly with existing tools in the market ([Cortex CLI](https://github.com/CortexLM/cortex) and [Cortex IDE](https://github.com/CortexLM/cortex-ide)), and training our own agentic coding language model by leveraging [GRAIL](https://github.com/one-covenant/grail) (Subnet 81) with datasets produced by network miners. The competitive challenge system aligns miner incentives with both goals: improving the software through harness competitions and bug bounties, while simultaneously fabricating the training data that will power the model.
