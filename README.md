@@ -1,10 +1,13 @@
-# ρlατfοrm rθαdmαρ
+<div align="center">
+
+# ρlατfοrm
+# rθαdmαρ
 
 **Distributed validator network for decentralized AI evaluation on Bittensor**
 
-[![Rust](https://img.shields.io/badge/rust-1.90+-orange.svg)](https://www.rust-lang.org/)
-
 ![Platform Banner](assets/banner.png)
+
+</div>
 
 ---
 
