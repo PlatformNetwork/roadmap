@@ -357,21 +357,21 @@ flowchart LR
     GH --> Sign["sr25519 Sign"]
     Sign --> API["/register"]
     API --> Verify{"Valid?"}
-    Verify -->|Yes| Store["PostgreSQL"]
+    Verify -->|Yes| P2P["P2P Storage"]
     Verify -->|No| Fail["Failed"]
 ```
 
 #### Platform Integration Architecture
 
-Bounty Challenge operates as a containerized service within the platform-v2 ecosystem. Validators auto-scan GitHub issues, verify labels, compute weights within a 24-hour rolling window, and submit them to the Bittensor chain.
+Bounty Challenge runs as a WASM module inside the platform-v2 P2P validator network. Validators auto-scan GitHub issues, verify labels, reach consensus over the P2P mesh, compute weights within a 24-hour rolling window, and submit them to the Bittensor chain.
 
 ```mermaid
 flowchart LR
     Miner["Miner"]
 
-    subgraph Platform["Platform Server"]
-        API["API"] --> DB[("PostgreSQL")]
-        Bounty["Bounty"] --> DB
+    subgraph Platform["Platform v2 P2P"]
+        API["API"] --> P2P["P2P Storage"]
+        Bounty["Bounty WASM"] --> P2P
     end
 
     subgraph GitHub["GitHub"]
@@ -601,7 +601,7 @@ gantt
     First Fine-tuned Model Release       :milestone, model, 2026-06-30, 0d
 ```
 
-The Cortex CLI was released on January 18, 2026, establishing the foundational command-line agent for the ecosystem. The Cortex IDE followed on February 20, 2026, providing a full graphical development environment. On February 21, 2026, Platform v2 and Term Challenge v2 launch together, marking the transition to a fully decentralized WASM-only validator architecture. Bounty Challenge v2 deploys in the same period with updated scoring mechanics and PostgreSQL-backed storage.
+The Cortex CLI was released on January 18, 2026, establishing the foundational command-line agent for the ecosystem. The Cortex IDE followed on February 20, 2026, providing a full graphical development environment. On February 21, 2026, Platform v2 and Term Challenge v2 launch together, marking the transition to a fully decentralized WASM-only validator architecture. Bounty Challenge v2 deploys in the same period with updated scoring mechanics and P2P-backed storage.
 
 Both Cortex CLI and Cortex IDE are targeted for production release at the end of March 2026, marking their readiness for commercial deployment.
 
