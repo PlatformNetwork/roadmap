@@ -369,38 +369,62 @@ The effective weight for Term Challenge incorporates the decay multiplier $\mu(t
 
 ---
 
-## GRAIL Integration — Verifiable Post-Training
+## The Model — Agentic Coding LLM
 
-The ultimate destination for the datasets produced by Platform Network's Data Fabrication Challenge is the [GRAIL protocol](https://github.com/one-covenant/grail) (*Guaranteed Rollout Authenticity via Inference Ledger*), operated independently as **Subnet 81** on Bittensor by the One Covenant team. GRAIL delivers post-training for language models with cryptographically verifiable inference, ensuring that rollouts produced during reinforcement learning are tied to a specific model and input and can be independently verified by validators. Platform Network (Subnet 100) intends to leverage GRAIL's infrastructure as a downstream consumer: the high-quality coding datasets produced by our miners feed into GRAIL's verifiable training pipeline, enabling the production of fine-tuned models without Platform Network needing to operate its own training infrastructure.
+The end goal of Platform Network is to train a dedicated **agentic coding language model**. This model will be purpose-built for autonomous software engineering tasks: understanding codebases, generating patches, reasoning about architecture, and executing multi-step development workflows. It is the model that will power Cortex CLI and Cortex IDE, and it is the primary monetization vehicle for the entire ecosystem.
+
+The training pipeline flows through three stages: data production on Subnet 100, verifiable post-training on Subnet 81, and commercial deployment through the Cortex products.
 
 ```mermaid
-flowchart LR
-    subgraph SN100["Subnet 100"]
-        Miners["Miners"] --> DFC["Data Fabrication"]
+flowchart TB
+    subgraph SN100["Subnet 100 — Data Production"]
+        DF["Data Fabrication"] -->|synthetic coding datasets| QA["Quality Validation"]
     end
 
-    subgraph SN81["GRAIL — Subnet 81"]
-        Rollout["Rollouts"] --> Verify["Verify"] --> Train["Train"]
+    subgraph SN81["GRAIL — Subnet 81 — Training"]
+        RL["RL Post-Training"] --> Verify["Cryptographic Verification"]
     end
 
-    subgraph Output["Output"]
-        Model["Model"] --> CLI["Cortex CLI"]
-        Model --> IDE["Cortex IDE"]
+    subgraph Model["Agentic Coding LLM"]
+        LLM["Fine-tuned Model"]
     end
 
-    DFC -->|datasets| Rollout
-    Train -->|weights| Model
+    subgraph Monetization["Monetization"]
+        CLI["Cortex CLI"]
+        IDE["Cortex IDE"]
+        API["Model API"]
+    end
+
+    subgraph Revenue["Revenue"]
+        Subs["Subscriptions"]
+        Licenses["Licenses"]
+    end
+
+    QA -->|verified datasets| RL
+    Verify -->|model weights| LLM
+    LLM --> CLI
+    LLM --> IDE
+    LLM --> API
+    CLI --> Subs
+    IDE --> Subs
+    API --> Licenses
+    Subs -->|buyback + reinvest| SN100
+    Licenses -->|buyback + reinvest| SN100
 ```
 
-The GRAIL protocol operates through a prover/verifier system. During rollout generation, miners produce multiple GRPO-style rollouts while tracking token IDs and log-probabilities for proof construction. The protocol binds each rollout to the generating model through PRF-based index derivation and sketch commitments. Formally, for a rollout $r$ produced by model $M$ on input $x$, the GRAIL commitment is:
+**Stage 1: Data Production (Subnet 100).** The Data Fabrication Challenge incentivizes miners to produce the best harnesses for generating synthetic coding datasets. These datasets cover code understanding, generation, debugging, refactoring, and multi-file reasoning tasks. Validators execute the harnesses in sandboxed environments and score the output along correctness, diversity, and utility axes. Only datasets that pass quality validation are forwarded to the training stage.
+
+**Stage 2: Verifiable Post-Training (GRAIL — Subnet 81).** The validated coding datasets feed into the [GRAIL protocol](https://github.com/one-covenant/grail) (*Guaranteed Rollout Authenticity via Inference Ledger*), operated independently by the One Covenant team on Subnet 81. GRAIL performs reinforcement learning post-training with cryptographically verifiable inference. Every rollout produced during RL is bound to a specific model and input through PRF-based commitments, ensuring no substitution or replay. Formally, for a rollout $r$ produced by model $M$ on input $x$:
 
 $$
 \text{Commit}(r, M, x) = \text{PRF}_k\big(\text{sketch}(r) \;\|\; \text{hash}(M) \;\|\; \text{hash}(x)\big)
 $$
 
-where $k$ is derived from the verifier-supplied challenge (combining drand randomness with the window's block hash). This ensures no substitution or replay attacks are possible.
+where $k$ is derived from the verifier-supplied challenge (drand randomness combined with the window's block hash). This guarantees that every training step is auditable and that the resulting model weights are provably the product of the claimed training data.
 
-The pipeline from Platform Network to GRAIL creates a cross-subnet collaboration: miners on Subnet 100 produce the raw material (high-quality coding datasets), and GRAIL on Subnet 81 provides the verifiable post-training infrastructure that transforms that material into measurably better models. These fine-tuned models then flow back into the Cortex software products, closing the loop between data production and model improvement.
+**Stage 3: Monetization via Cortex Products.** The fine-tuned agentic coding LLM is deployed as the default model inside Cortex CLI and Cortex IDE. Users access the model through subscriptions (individual and enterprise licenses). The model can also be exposed as a standalone API for third-party integrations. Revenue generated from model usage flows back into the ecosystem through TAO buybacks and reinvestment in new challenges, closing the loop between data production, model training, and commercial value.
+
+This pipeline means that every miner contributing to the Data Fabrication Challenge is directly improving the model that generates revenue for the network. The better the datasets, the better the model. The better the model, the more customers. The more customers, the stronger the incentives for miners to produce even better datasets.
 
 ---
 
