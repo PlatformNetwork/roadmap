@@ -17,6 +17,7 @@
    - [Platform v2 — P2P Validator Network](#platform-v2--p2p-validator-network)
 3. [Challenges](#challenges)
    - [Term Challenge](#term-challenge--agent-harness-competition)
+     - [swe-forge — Preventing Overfitting](#synthetic-evaluation-with-swe-forge--preventing-overfitting)
    - [Bounty Challenge](#bounty-challenge--bug-discovery-and-software-improvement)
    - [Data Fabrication Challenge](#data-fabrication-challenge--synthetic-coding-dataset-production-q2-2026)
 4. [Unified Scoring Framework](#unified-scoring-framework)
@@ -283,6 +284,31 @@ flowchart TB
     Match -->|Yes| Valid["Validated"]
     Match -->|No| Drop["Rejected"]
 ```
+
+#### Synthetic Evaluation with swe-forge — Preventing Overfitting
+
+**Repository:** [CortexLM/swe-forge](https://github.com/CortexLM/swe-forge)
+
+A critical weakness of static benchmarks like SWE-bench is that agents can overfit to known tasks. If the evaluation dataset never changes, miners can memorize solutions rather than build genuinely capable agents. swe-forge solves this by continuously generating fresh, never-before-seen SWE-bench-style tasks from real-world GitHub pull requests in real time.
+
+The pipeline mines GitHub Archive for recently merged PRs, enriches them with repository metadata, classifies difficulty via LLM, extracts patches, and generates tests inside Docker-isolated containers through a multi-turn agentic loop (up to 200 turns of tool use). Every generated task is validated through a dual-commit process: tests must fail on the pre-PR commit and pass on the post-PR commit. Only tasks that survive this validation and pass a quality score threshold ($\geq 0.30$) are accepted into the evaluation pool.
+
+```mermaid
+flowchart LR
+    GH["GitHub Archive"] -->|merged PRs| Filter["Pre-filter"]
+    Filter --> Enrich["Enrich"]
+    Enrich --> Classify["LLM Classify"]
+    Classify --> Patch["Extract Patch"]
+    Patch --> Docker["Docker Test Gen"]
+    Docker --> Dual{"Dual-commit?"}
+    Dual -->|Fail| Reject["Reject"]
+    Dual -->|Pass| Quality{"Score ≥ 0.30?"}
+    Quality -->|No| Reject
+    Quality -->|Yes| Pool["Evaluation Pool"]
+    Pool --> Term["Term Challenge"]
+```
+
+This means the Term Challenge evaluation set is a moving target. Every term, agents face tasks they have never encountered before, drawn from real software projects across multiple languages (Python, Go, Java, TypeScript, Rust). Overfitting to a static benchmark becomes impossible because the benchmark itself is continuously regenerated. The overall pipeline yield is deliberately low (~0.00046% of raw events become accepted tasks), ensuring only high-quality, well-validated tasks enter the evaluation pool.
 
 ---
 
@@ -581,6 +607,7 @@ In Q2 2026, the Data Fabrication Challenge goes live, opening a new competitive 
 | [PlatformNetwork/platform-v2](https://github.com/PlatformNetwork/platform-v2) | WASM-only P2P validator network for distributed evaluation on Bittensor |
 | [PlatformNetwork/term-challenge-v2](https://github.com/PlatformNetwork/term-challenge-v2) | Terminal benchmark challenge — WASM evaluation module for agent harness competition |
 | [PlatformNetwork/bounty-challenge](https://github.com/PlatformNetwork/bounty-challenge) | GitHub issue reward system for bug discovery and software improvement |
+| [CortexLM/swe-forge](https://github.com/CortexLM/swe-forge) | Synthetic SWE-bench task generation from real-time GitHub PRs for overfitting-proof evaluation |
 | [CortexLM/cortex](https://github.com/CortexLM/cortex) | Agent-native development CLI written in Rust |
 | [CortexLM/cortex-ide](https://github.com/CortexLM/cortex-ide) | AI-powered IDE built with Tauri v2 (SolidJS + Rust) |
 | [one-covenant/basilica](https://github.com/one-covenant/basilica) | Decentralized GPU compute for container hosting (Subnet 39, external team) |
