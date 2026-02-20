@@ -4,7 +4,7 @@
 
 **Roadmap for Subnet 100. Distributed validator network for decentralized AI evaluation on Bittensor**
 
-![Platform Banner](assets/banner.png)
+![Platform Banner](assets/banner.jpg)
 
 </div>
 
