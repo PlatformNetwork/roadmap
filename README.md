@@ -23,41 +23,41 @@ The core infrastructure is implemented in [platform-v2](https://github.com/Platf
 
 ```mermaid
 flowchart TB
-    subgraph Cortex["Cortex Software Products"]
-        CLI["Cortex CLI\n(github.com/CortexLM/cortex)"]
-        IDE["Cortex IDE\n(github.com/CortexLM/cortex-ide)"]
+    subgraph Cortex["Cortex Products"]
+        CLI["Cortex CLI"]
+        IDE["Cortex IDE"]
     end
 
-    subgraph Platform["Platform Network — Subnet 100"]
-        PV2["platform-v2\nWASM Validator Network"]
-        TC["Term Challenge\nAgent Harness Competition"]
-        BC["Bounty Challenge\nBug Discovery & QA"]
-        DC["Data Fabrication Challenge\nDataset Production"]
+    subgraph Platform["Subnet 100"]
+        PV2["platform-v2"]
+        TC["Term Challenge"]
+        BC["Bounty Challenge"]
+        DC["Data Fabrication"]
     end
 
-    subgraph External["External Integration"]
-        BT["Bittensor Chain\nWeight Submission"]
-        GRAIL["GRAIL Protocol — Subnet 81\n(one-covenant/grail)\nVerifiable Post-Training"]
+    subgraph External["External"]
+        BT["Bittensor"]
+        GRAIL["GRAIL — SN81"]
     end
 
-    Miners["Miners\n(Network Participants)"] -->|Submit agent harnesses| TC
-    Miners -->|Report bugs| BC
-    Miners -->|Submit data fabrication harnesses| DC
+    Miners["Miners"] -->|harnesses| TC
+    Miners -->|bugs| BC
+    Miners -->|datasets| DC
 
-    TC -->|Evaluate against| CLI
-    TC -->|Evaluate against| IDE
-    BC -->|Improve quality of| CLI
-    BC -->|Improve quality of| IDE
-    DC -->|Training data for| GRAIL
+    TC --> CLI
+    TC --> IDE
+    BC --> CLI
+    BC --> IDE
+    DC --> GRAIL
 
-    PV2 -->|Hosts| TC
-    PV2 -->|Hosts| BC
-    PV2 -->|Hosts| DC
-    PV2 -->|Consensus weights| BT
-    BT -->|TAO emissions| Miners
+    PV2 --> TC
+    PV2 --> BC
+    PV2 --> DC
+    PV2 -->|weights| BT
+    BT -->|TAO| Miners
 
-    GRAIL -->|Fine-tuned models| CLI
-    GRAIL -->|Fine-tuned models| IDE
+    GRAIL -->|models| CLI
+    GRAIL -->|models| IDE
 ```
 
 Miners interact with three challenge modules hosted on the platform-v2 validator network. Each challenge produces measurable outputs (scores, valid issues, datasets) that validators aggregate through P2P consensus before submitting weights to the Bittensor chain. TAO emissions flow back to miners in proportion to their performance, completing the incentive loop.
@@ -77,25 +77,25 @@ Term Challenge is the flagship competition of Platform Network. Miners submit Py
 ```mermaid
 sequenceDiagram
     participant M as Miner
-    participant V as Validators (P2P)
-    participant LLM as LLM Reviewers (×3)
-    participant AST as AST Reviewers (×3)
-    participant W as WASM Module
-    participant E as term-executor
-    participant BT as Bittensor Chain
+    participant V as Validators
+    participant LLM as LLM (×3)
+    participant AST as AST (×3)
+    participant W as WASM
+    participant E as Executor
+    participant BT as Bittensor
 
-    M->>V: Submit agent ZIP + metadata
-    V->>W: validate(submission)
-    W-->>V: Approved (>50% consensus)
-    V->>LLM: Assign LLM code review
-    V->>AST: Assign AST structural review
-    LLM-->>V: LLM review scores
-    AST-->>V: AST review scores
-    V->>E: Execute agent on SWE-bench tasks
-    E-->>V: Task results + scores
-    V->>W: evaluate(results)
-    W-->>V: Aggregate score + weight
-    V->>BT: Submit weights at epoch boundary
+    M->>V: Submit ZIP
+    V->>W: validate()
+    W-->>V: Approved
+    V->>LLM: Code review
+    V->>AST: Structural review
+    LLM-->>V: Scores
+    AST-->>V: Scores
+    V->>E: Execute tasks
+    E-->>V: Results
+    V->>W: evaluate()
+    W-->>V: Weight
+    V->>BT: Set weights
 ```
 
 #### Submission Flow
@@ -104,17 +104,17 @@ The submission process enforces rate limiting (1 submission per 3 epochs per min
 
 ```mermaid
 flowchart LR
-    Register["Register Name\n(first-register-owns)"] --> Version["Auto-increment\nVersion"]
-    Version --> Pack["Package Agent\nZIP ≤ 1MB"]
-    Pack --> Sign["Sign with\nsr25519"]
-    Sign --> Submit["Submit via\nJSON-RPC"]
-    Submit --> RateCheck{"Epoch Rate\nLimit OK?"}
-    RateCheck -->|"No: < 3 epochs\nsince last"| Reject["Rejected"]
-    RateCheck -->|Yes| Validate["WASM\nvalidate()"]
-    Validate --> Consensus{">50% Validator\nApproval?"}
+    Register["Register"] --> Version["Version++"]
+    Version --> Pack["ZIP ≤ 1MB"]
+    Pack --> Sign["sr25519 Sign"]
+    Sign --> Submit["Submit"]
+    Submit --> Rate{"Rate OK?"}
+    Rate -->|No| Reject["Reject"]
+    Rate -->|Yes| Validate["validate()"]
+    Validate --> Consensus{">50%?"}
     Consensus -->|No| Reject
-    Consensus -->|Yes| Evaluate["Evaluation\nPipeline"]
-    Evaluate --> Store["Store Code +\nHash + Logs"]
+    Consensus -->|Yes| Eval["Evaluate"]
+    Eval --> Store["Store"]
 ```
 
 #### Validator Assignment
@@ -123,25 +123,19 @@ For each submission, six validators are deterministically selected from a seed d
 
 ```mermaid
 flowchart TB
-    Sub["New Submission"] --> Seed["Deterministic Seed\nfrom submission_id"]
-    Seed --> Select["Select 6 Validators"]
-    Select --> LLM["3 LLM Reviewers"]
-    Select --> AST["3 AST Reviewers"]
-    LLM --> LR1["LLM Reviewer 1"]
-    LLM --> LR2["LLM Reviewer 2"]
-    LLM --> LR3["LLM Reviewer 3"]
-    AST --> AR1["AST Reviewer 1"]
-    AST --> AR2["AST Reviewer 2"]
-    AST --> AR3["AST Reviewer 3"]
-    LR1 & LR2 & LR3 --> TD1{"Responded\nin time?"}
-    AR1 & AR2 & AR3 --> TD2{"Responded\nin time?"}
-    TD1 -->|No| Rep1["Replacement\nValidator"]
-    TD1 -->|Yes| Agg["Result\nAggregation"]
-    TD2 -->|No| Rep2["Replacement\nValidator"]
-    TD2 -->|Yes| Agg
+    Sub["Submission"] --> Seed["Seed"]
+    Seed --> Select["6 Validators"]
+    Select --> LLM["3 LLM"]
+    Select --> AST["3 AST"]
+    LLM --> TD1{"Timeout?"}
+    AST --> TD2{"Timeout?"}
+    TD1 -->|No| Agg["Aggregate"]
+    TD1 -->|Yes| Rep1["Replace"]
+    TD2 -->|No| Agg
+    TD2 -->|Yes| Rep2["Replace"]
     Rep1 --> Agg
     Rep2 --> Agg
-    Agg --> FinalScore["Final Score"]
+    Agg --> Score["Final Score"]
 ```
 
 #### Decay Mechanism
@@ -165,12 +159,12 @@ After 72 hours of grace and 24 hours of decay ($t = 96$), the multiplier drops t
 
 ```mermaid
 flowchart LR
-    Top["Top Score\nAchieved"] --> Grace["72h Grace\nPeriod"]
-    Grace -->|Within grace| Full["100% Weight\nRetained"]
-    Grace -->|After grace| Decay["Exponential\nDecay Begins"]
-    Decay --> Half["50% per 24h\nhalf-life"]
-    Half --> Min["Decay to 0.0\nmin multiplier"]
-    Min --> Burn["Weight Burns\nto UID 0"]
+    Top["Top Score"] --> Grace["72h Grace"]
+    Grace -->|Within| Full["100% Weight"]
+    Grace -->|After| Decay["Decay"]
+    Decay --> Half["50% / 24h"]
+    Half --> Zero["→ 0"]
+    Zero --> Burn["Burn UID 0"]
 ```
 
 #### Agent Code Storage and Log Consensus
@@ -179,19 +173,19 @@ Submitted agent packages (up to 1 MB) are stored on-chain with hash verification
 
 ```mermaid
 flowchart TB
-    Submit["Agent Submission"] --> ValidateSize{"package_zip\n≤ 1MB?"}
-    ValidateSize -->|Yes| Store["Blockchain\nStorage"]
-    ValidateSize -->|No| Reject["Rejected"]
-    Store --> Code["agent_code:hotkey:epoch"]
-    Store --> Hash["agent_hash:hotkey:epoch"]
-    Store --> Logs["agent_logs:hotkey:epoch\n≤ 256KB"]
+    Submit["Submission"] --> Size{"≤ 1MB?"}
+    Size -->|Yes| Store["Storage"]
+    Size -->|No| Reject["Reject"]
+    Store --> Code["agent_code"]
+    Store --> Hash["agent_hash"]
+    Store --> Logs["agent_logs"]
 
-    V1["Validator 1"] -->|Log Proposal| P2P["P2P Network"]
-    V2["Validator 2"] -->|Log Proposal| P2P
-    V3["Validator 3"] -->|Log Proposal| P2P
-    P2P --> HashMatch{">50% Hash\nMatch?"}
-    HashMatch -->|Yes| Validated["Validated Logs"]
-    HashMatch -->|No| Discarded["Rejected"]
+    V1["Validator 1"] --> P2P["P2P"]
+    V2["Validator 2"] --> P2P
+    V3["Validator 3"] --> P2P
+    P2P --> Match{">50% match?"}
+    Match -->|Yes| Valid["Validated"]
+    Match -->|No| Drop["Rejected"]
 ```
 
 ---
@@ -204,28 +198,21 @@ Bounty Challenge takes a different approach to incentivizing software quality. R
 
 ```mermaid
 flowchart LR
-    subgraph Miner Actions
-        Discover["Discover Bug\nor Improvement"]
-        Submit["Submit Issue\nto bounty-challenge repo"]
-        Sign["Sign with sr25519\n(Hotkey Verification)"]
+    subgraph Miner
+        Discover["Find Bug"] --> Submit["Submit Issue"] --> Sign["sr25519 Sign"]
     end
 
     subgraph Validation
-        Review["Maintainer Review"]
-        Label{"Valid Label\nApplied?"}
-        Score["Points Credited\n(1 point per valid issue)"]
-        Reject["No Reward"]
+        Review["Review"] --> Label{"Valid?"}
     end
 
-    subgraph Weight Calculation
-        Net["Net Points =\nvalid + star_bonus − penalty"]
-        Weight["Weight =\nnet_points × 0.02"]
-        Chain["Submit to\nBittensor Chain"]
+    subgraph Weights
+        Score["Points"] --> Net["Net Points"] --> Weight["Weight"] --> Chain["Bittensor"]
     end
 
-    Discover --> Submit --> Sign --> Review --> Label
-    Label -->|Yes| Score --> Net --> Weight --> Chain
-    Label -->|No| Reject
+    Sign --> Review
+    Label -->|Yes| Score
+    Label -->|No| Reject["No Reward"]
 ```
 
 #### Registration and Authentication
@@ -234,13 +221,13 @@ Miners register by linking their GitHub username to their Bittensor hotkey via a
 
 ```mermaid
 flowchart LR
-    CLI["bounty wizard\n(CLI)"] --> Key["Enter Bittensor\nSecret Key"]
-    Key --> GitHub["Provide GitHub\nUsername"]
-    GitHub --> Sign["sr25519 Signature\nof Username"]
-    Sign --> API["POST /register\nvia Bridge API"]
-    API --> Verify{"Signature\nValid?"}
-    Verify -->|Yes| Store["Store Registration\nin PostgreSQL"]
-    Verify -->|No| Reject["Registration\nFailed"]
+    CLI["CLI Wizard"] --> Key["Secret Key"]
+    Key --> GH["GitHub User"]
+    GH --> Sign["sr25519 Sign"]
+    Sign --> API["/register"]
+    API --> Verify{"Valid?"}
+    Verify -->|Yes| Store["PostgreSQL"]
+    Verify -->|No| Fail["Failed"]
 ```
 
 #### Platform Integration Architecture
@@ -249,26 +236,21 @@ Bounty Challenge operates as a containerized service within the platform-v2 ecos
 
 ```mermaid
 flowchart LR
-    subgraph Miners
-        Miner["Miner\n(CLI/wizard)"]
-    end
+    Miner["Miner"]
 
-    subgraph Platform["Platform Server\nchain.platform.network"]
-        API["API Gateway"]
-        DB[("PostgreSQL")]
-        Bounty["Bounty Challenge\n(container)"]
-        API --> DB
-        Bounty --> DB
+    subgraph Platform["Platform Server"]
+        API["API"] --> DB[("PostgreSQL")]
+        Bounty["Bounty"] --> DB
     end
 
     subgraph GitHub["GitHub"]
-        Issues["bounty-challenge\nIssue Tracker"]
+        Issues["Issues"]
     end
 
-    Miner -->|"register/status"| API
-    API -->|"route"| Bounty
-    Bounty -->|"scan issues"| Issues
-    Miner -->|"create issues"| Issues
+    Miner -->|register| API
+    API --> Bounty
+    Bounty -->|scan| Issues
+    Miner -->|create| Issues
 ```
 
 #### Weight Calculation Formula
@@ -291,9 +273,9 @@ The star bonus $b_i$ caps at 1.25 points (5 repositories at 0.25 each) and requi
 
 ---
 
-### Data Fabrication Challenge — Synthetic Coding Dataset Production (March 2026)
+### Data Fabrication Challenge — Synthetic Coding Dataset Production (Q2 2026)
 
-The third challenge, planned for launch in **March 2026**, incentivizes miners to produce the best harnesses for fabricating synthetic coding datasets. Miners compete to build and submit data generation pipelines (harnesses) that autonomously produce high-quality training data specialized in code understanding, generation, and reasoning tasks. Validators execute these harnesses in sandboxed environments and evaluate the quality, diversity, and correctness of the resulting synthetic datasets through automated metrics and cross-validation. The better the harness performs at generating useful coding data, the higher the miner's weight and TAO earnings.
+The third challenge, planned for launch in **Q2 2026**, incentivizes miners to produce the best harnesses for fabricating synthetic coding datasets. Miners compete to build and submit data generation pipelines (harnesses) that autonomously produce high-quality training data specialized in code understanding, generation, and reasoning tasks. Validators execute these harnesses in sandboxed environments and evaluate the quality, diversity, and correctness of the resulting synthetic datasets through automated metrics and cross-validation. The better the harness performs at generating useful coding data, the higher the miner's weight and TAO earnings.
 
 The datasets produced through this challenge serve a strategic purpose: they become the training fuel for fine-tuning language models through the GRAIL protocol, creating a direct pipeline from decentralized data production to verifiable model improvement.
 
@@ -301,36 +283,26 @@ The datasets produced through this challenge serve a strategic purpose: they bec
 
 ```mermaid
 flowchart TB
-    subgraph MinerSide["Miner"]
-        Build["Build Data\nFabrication Harness"]
-        Package["Package Harness\n+ Metadata"]
-        Submit["Submit to\nValidator Network"]
+    subgraph Miner
+        Build["Build Harness"] --> Package["Package"] --> Submit["Submit"]
     end
 
-    subgraph ValidatorSide["Validator Network"]
-        Receive["Receive Harness\nSubmission"]
-        Execute["Execute Harness\nin Sandbox"]
-        Output["Synthetic Coding\nDataset Output"]
-        Correctness["Correctness Check\n(syntax, executability)"]
-        Diversity["Diversity Analysis\n(language coverage)"]
-        Utility["Utility Scoring\n(held-out validation)"]
-        Aggregate["Aggregate\nQuality Score"]
+    subgraph Validators
+        Receive["Receive"] --> Execute["Execute"] --> Output["Dataset"]
+        Output --> C["Correctness"]
+        Output --> D["Diversity"]
+        Output --> U["Utility"]
+        C --> Agg["Score"]
+        D --> Agg
+        U --> Agg
     end
 
-    subgraph Downstream["Downstream"]
-        Store["Store Validated\nDatasets"]
-        GRAIL["Feed to GRAIL\n(Subnet 81)"]
+    subgraph Downstream
+        Store["Store"] --> GRAIL["GRAIL SN81"]
     end
 
-    Build --> Package --> Submit --> Receive
-    Receive --> Execute --> Output
-    Output --> Correctness
-    Output --> Diversity
-    Output --> Utility
-    Correctness --> Aggregate
-    Diversity --> Aggregate
-    Utility --> Aggregate
-    Aggregate --> Store --> GRAIL
+    Submit --> Receive
+    Agg --> Store
 ```
 
 #### Quality Scoring
@@ -379,30 +351,21 @@ The ultimate destination for the datasets produced by Platform Network's Data Fa
 
 ```mermaid
 flowchart LR
-    subgraph SN100["Subnet 100 — Platform Network"]
-        DFC["Data Fabrication\nChallenge"]
-        Miners100["Miners produce\ncoding datasets"]
+    subgraph SN100["Subnet 100"]
+        Miners["Miners"] --> DFC["Data Fabrication"]
     end
 
-    subgraph GRAIL_Pipeline["GRAIL Protocol — Subnet 81 (External)"]
-        Rollout["Rollout Generation\n(GRPO-style)"]
-        Verify["GRAIL Verification\n(PRF commitments)"]
-        Train["Post-Training\n(RL fine-tuning)"]
+    subgraph SN81["GRAIL — Subnet 81"]
+        Rollout["Rollouts"] --> Verify["Verify"] --> Train["Train"]
     end
 
-    subgraph Output["Improved Models"]
-        Model["Fine-tuned\nLanguage Model"]
-        CortexCLI["Cortex CLI\nEnhanced Agent"]
-        CortexIDE["Cortex IDE\nEnhanced Agent"]
+    subgraph Output["Output"]
+        Model["Model"] --> CLI["Cortex CLI"]
+        Model --> IDE["Cortex IDE"]
     end
 
-    Miners100 -->|High-quality datasets| DFC
-    DFC -->|Validated datasets| Rollout
-    Rollout -->|Signed rollouts| Verify
-    Verify -->|Verified rollouts| Train
-    Train -->|Updated weights| Model
-    Model --> CortexCLI
-    Model --> CortexIDE
+    DFC -->|datasets| Rollout
+    Train -->|weights| Model
 ```
 
 The GRAIL protocol operates through a prover/verifier system. During rollout generation, miners produce multiple GRPO-style rollouts while tracking token IDs and log-probabilities for proof construction. The protocol binds each rollout to the generating model through PRF-based index derivation and sketch commitments. Formally, for a rollout $r$ produced by model $M$ on input $x$, the GRAIL commitment is:
@@ -423,25 +386,20 @@ Platform Network's economic model creates a self-sustaining cycle connecting sof
 
 ```mermaid
 flowchart TB
-    Dev["1. Software Development\n(Cortex CLI + IDE)"]
-    Market["2. Marketing\n& Community Growth"]
-    Customers["3. Customers\n(Subscriptions & Licenses)"]
-    Revenue["4. Revenue Generation"]
+    Dev["1. Development"] -->|tools| Market["2. Marketing"]
+    Market -->|users| Customers["3. Customers"]
+    Customers -->|fees| Revenue["4. Revenue"]
 
-    Dev -->|Superior AI tools| Market
-    Market -->|User acquisition| Customers
-    Customers -->|Subscription fees| Revenue
+    Revenue --> Buyback["TAO Buyback"]
+    Revenue --> MktBudget["Marketing"]
+    Revenue --> DevBudget["Dev Budget"]
 
-    Revenue -->|Reinvestment| Buyback["TAO Buyback\n(Token Demand)"]
-    Revenue -->|Reinvestment| MarketReinvest["Marketing Budget\nExpansion"]
-    Revenue -->|Reinvestment| DevReinvest["Development\nAcceleration"]
+    Buyback --> Emissions["TAO Value"]
+    Emissions --> Miners["Miners"]
+    Miners -->|harnesses + bugs + data| Dev
 
-    Buyback -->|Increased token value| Emissions["Higher TAO\nEmission Value"]
-    Emissions -->|Stronger incentives| Miners["Miner Participation\n& Competition"]
-    Miners -->|Better harnesses,\nmore bugs found,\nbetter datasets| Dev
-
-    MarketReinvest -->|Broader reach| Market
-    DevReinvest -->|More features| Dev
+    MktBudget --> Market
+    DevBudget --> Dev
 ```
 
 **Stage 1: Software Development.** The challenges hosted on Platform Network (Term Challenge, Bounty Challenge, Data Fabrication Challenge) directly improve the quality of Cortex CLI and Cortex IDE. Miners competing to produce the best agent harnesses drive performance improvements. Bug bounty participants eliminate defects and security vulnerabilities. Dataset producers create the training data that fine-tunes the underlying language models.
@@ -481,18 +439,18 @@ gantt
     Bounty Challenge v2                  :active, bc2, 2026-02-21, 14d
 
     section Upcoming Challenges
-    Data Fabrication Challenge           :dc, 2026-03-01, 30d
+    Data Fabrication Challenge           :dc, 2026-04-01, 60d
 
     section Model Training
-    GRAIL Integration Pipeline           :grail, 2026-04-01, 60d
-    First Fine-tuned Model Release       :milestone, model, 2026-05-31, 0d
+    GRAIL Integration Pipeline           :grail, 2026-05-01, 60d
+    First Fine-tuned Model Release       :milestone, model, 2026-06-30, 0d
 ```
 
 The Cortex CLI was released on January 18, 2026, establishing the foundational command-line agent for the ecosystem. The Cortex IDE followed on February 20, 2026, providing a full graphical development environment. On February 21, 2026, Platform v2 and Term Challenge v2 launch together, marking the transition to a fully decentralized WASM-only validator architecture. Bounty Challenge v2 deploys in the same period with updated scoring mechanics and PostgreSQL-backed storage.
 
-In March 2026, the Data Fabrication Challenge goes live, opening a new competitive frontier where miners produce coding datasets optimized for model training. Both Cortex CLI and Cortex IDE are targeted for production release at the end of March 2026, marking their readiness for commercial deployment.
+Both Cortex CLI and Cortex IDE are targeted for production release at the end of March 2026, marking their readiness for commercial deployment.
 
-Starting Q2 2026, the GRAIL integration pipeline becomes operational. Validated datasets from the Data Fabrication Challenge flow into the GRAIL verifiable post-training system on Subnet 81, producing the first fine-tuned language models purpose-built for the Cortex ecosystem.
+In Q2 2026, the Data Fabrication Challenge goes live, opening a new competitive frontier where miners produce coding datasets optimized for model training. The GRAIL integration pipeline follows, with validated datasets flowing into the GRAIL verifiable post-training system on Subnet 81, producing the first fine-tuned language models purpose-built for the Cortex ecosystem.
 
 ---
 
