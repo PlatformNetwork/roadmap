@@ -12,7 +12,7 @@
 
 ## Overview
 
-Platform Network operates as **Subnet 100** on the Bittensor blockchain. It is a decentralized incentive layer designed to continuously improve AI-powered development tools through competitive challenges. Miners on the network compete to produce the most effective harnesses for the [Cortex CLI](https://github.com/CortexLM/cortex) and [Cortex IDE](https://github.com/CortexLM/cortex-ide). The long-term objective is to train dedicated language models by leveraging [GRAIL](https://github.com/one-covenant/grail) (Subnet 81), an external protocol for cryptographically verifiable inference, using the datasets fabricated by network participants.
+Platform Network operates as **Subnet 100** on the Bittensor blockchain. It is a decentralized incentive layer with two long-term objectives: building the best agentic coding software competing directly with existing tools in the market ([Cortex CLI](https://github.com/CortexLM/cortex) and [Cortex IDE](https://github.com/CortexLM/cortex-ide)), and training our own agentic coding language model by leveraging [GRAIL](https://github.com/one-covenant/grail) (Subnet 81) with datasets produced by network miners. The competitive challenge system aligns miner incentives with both goals: improving the software through harness competitions and bug bounties, while simultaneously fabricating the training data that will power the model.
 
 The core infrastructure is implemented in [platform-v2](https://github.com/PlatformNetwork/platform-v2), a fully decentralized peer-to-peer validator network built in Rust. Validators execute challenge logic inside a hardened WASM runtime, reach stake-weighted consensus over libp2p, and submit finalized weights to the Bittensor chain.
 
@@ -20,15 +20,15 @@ The challenge execution layer relies on two external Bittensor subnets. [Basilic
 
 ```mermaid
 flowchart LR
-    subgraph Infra["Challenge Infrastructure"]
-        Basilica["Basilica — SN39\nContainer Hosting"]
-        Chutes["Chutes — SN64\nLLM Inference"]
+    subgraph Infra["Infrastructure"]
+        Basilica["Basilica SN39"]
+        Chutes["Chutes SN64"]
     end
 
-    Agent["Miner Agent"] -->|runs on| Basilica
-    Agent -->|LLM calls| Chutes
-    Basilica -->|isolated execution| Validators["Platform Validators"]
-    Chutes -->|inference results| Agent
+    Agent["Miner Agent"] -->|containers| Basilica
+    Agent -->|inference| Chutes
+    Basilica --> Validators["Validators"]
+    Chutes --> Agent
 ```
 
 ---
