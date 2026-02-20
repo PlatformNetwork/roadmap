@@ -14,6 +14,7 @@
 
 1. [Overview](#overview)
 2. [Network Architecture](#network-architecture)
+   - [Platform v2 — P2P Validator Network](#platform-v2--p2p-validator-network)
 3. [Challenges](#challenges)
    - [Term Challenge](#term-challenge--agent-harness-competition)
    - [Bounty Challenge](#bounty-challenge--bug-discovery-and-software-improvement)
@@ -101,6 +102,61 @@ flowchart TB
 ```
 
 Miners interact with three challenge modules hosted on the platform-v2 validator network. Each challenge produces measurable outputs (scores, valid issues, datasets) that validators aggregate through P2P consensus before submitting weights to the Bittensor chain. TAO emissions flow back to miners in proportion to their performance, completing the incentive loop.
+
+### Platform v2 — P2P Validator Network
+
+**Repository:** [PlatformNetwork/platform-v2](https://github.com/PlatformNetwork/platform-v2)
+
+Platform v2 is the backbone of the entire subnet. It is a fully decentralized peer-to-peer validator network where validators form a libp2p mesh, execute challenge logic in a sandboxed WASM runtime, and reach stake-weighted PBFT-style consensus before submitting finalized weights to the Bittensor chain. There is no centralized relay. Every validator independently verifies miner submissions and participates in consensus.
+
+```mermaid
+flowchart LR
+    Owner["Sudo Owner"] -->|challenge config| Mesh["libp2p Mesh"]
+    Mesh --> V1["Validator 1"]
+    Mesh --> V2["Validator 2"]
+    Mesh --> VN["Validator N"]
+    V1 -->|votes| Mesh
+    V2 -->|votes| Mesh
+    VN -->|votes| Mesh
+    V1 -->|weights| BT["Bittensor"]
+    V2 -->|weights| BT
+    VN -->|weights| BT
+```
+
+The consensus protocol follows a PBFT-style flow. A leader proposes an action at a given height, all validators vote to approve or reject, and once $\geq 2f+1$ approvals are collected the action is committed and weights are submitted on-chain.
+
+```mermaid
+sequenceDiagram
+    participant L as Leader
+    participant V1 as Validator 1
+    participant V2 as Validator 2
+    participant VN as Validator N
+    participant BT as Bittensor
+
+    L->>V1: Proposal
+    L->>V2: Proposal
+    L->>VN: Proposal
+    V1-->>L: Vote
+    V2-->>L: Vote
+    VN-->>L: Vote
+    L-->>V1: Commit (≥2f+1)
+    L-->>V2: Commit (≥2f+1)
+    L-->>VN: Commit (≥2f+1)
+    V1->>BT: Set weights
+    V2->>BT: Set weights
+    VN->>BT: Set weights
+```
+
+Challenge logic runs inside a hardened WASM runtime with strict runtime policy. Each challenge is a compiled WASM module loaded by validators. The runtime enforces deterministic outputs, whitelisted host functions, and full audit logging.
+
+```mermaid
+flowchart LR
+    Validator["Validator"] --> Runtime["WASM Runtime"]
+    Runtime --> Policy["Runtime Policy"]
+    Runtime --> Host["Host Functions"]
+    Runtime --> Audit["Audit Logs"]
+    Runtime -->|deterministic output| Validator
+```
 
 ---
 
