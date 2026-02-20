@@ -1,9 +1,8 @@
 <div align="center">
 
 # ρlατfοrm
-# rθαdmαρ
 
-**Distributed validator network for decentralized AI evaluation on Bittensor**
+**Roadmap for Subnet 100. Distributed validator network for decentralized AI evaluation on Bittensor**
 
 ![Platform Banner](assets/banner.png)
 
@@ -16,6 +15,21 @@
 Platform Network operates as **Subnet 100** on the Bittensor blockchain. It is a decentralized incentive layer designed to continuously improve AI-powered development tools through competitive challenges. Miners on the network compete to produce the most effective harnesses for the [Cortex CLI](https://github.com/CortexLM/cortex) and [Cortex IDE](https://github.com/CortexLM/cortex-ide). The long-term objective is to train dedicated language models by leveraging [GRAIL](https://github.com/one-covenant/grail) (Subnet 81), an external protocol for cryptographically verifiable inference, using the datasets fabricated by network participants.
 
 The core infrastructure is implemented in [platform-v2](https://github.com/PlatformNetwork/platform-v2), a fully decentralized peer-to-peer validator network built in Rust. Validators execute challenge logic inside a hardened WASM runtime, reach stake-weighted consensus over libp2p, and submit finalized weights to the Bittensor chain.
+
+The challenge execution layer relies on two external Bittensor subnets. [Basilica](https://github.com/one-covenant/basilica) (Subnet 39) provides decentralized GPU compute for hosting miner agents in isolated containers. [Chutes](https://github.com/chutesai/chutes) (Subnet 64) provides the LLM inference layer used by agents during challenge evaluation. Together, Basilica and Chutes form the compute backbone that powers all challenge execution on Platform Network.
+
+```mermaid
+flowchart LR
+    subgraph Infra["Challenge Infrastructure"]
+        Basilica["Basilica — SN39\nContainer Hosting"]
+        Chutes["Chutes — SN64\nLLM Inference"]
+    end
+
+    Agent["Miner Agent"] -->|runs on| Basilica
+    Agent -->|LLM calls| Chutes
+    Basilica -->|isolated execution| Validators["Platform Validators"]
+    Chutes -->|inference results| Agent
+```
 
 ---
 
@@ -33,6 +47,11 @@ flowchart TB
         TC["Term Challenge"]
         BC["Bounty Challenge"]
         DC["Data Fabrication"]
+    end
+
+    subgraph Infra["Infrastructure"]
+        Basilica["Basilica — SN39"]
+        Chutes["Chutes — SN64"]
     end
 
     subgraph External["External"]
@@ -55,6 +74,11 @@ flowchart TB
     PV2 --> DC
     PV2 -->|weights| BT
     BT -->|TAO| Miners
+
+    TC -->|containers| Basilica
+    TC -->|inference| Chutes
+    DC -->|containers| Basilica
+    DC -->|inference| Chutes
 
     GRAIL -->|models| CLI
     GRAIL -->|models| IDE
@@ -463,6 +487,8 @@ In Q2 2026, the Data Fabrication Challenge goes live, opening a new competitive 
 | [PlatformNetwork/bounty-challenge](https://github.com/PlatformNetwork/bounty-challenge) | GitHub issue reward system for bug discovery and software improvement |
 | [CortexLM/cortex](https://github.com/CortexLM/cortex) | Agent-native development CLI written in Rust |
 | [CortexLM/cortex-ide](https://github.com/CortexLM/cortex-ide) | AI-powered IDE built with Tauri v2 (SolidJS + Rust) |
+| [one-covenant/basilica](https://github.com/one-covenant/basilica) | Decentralized GPU compute for container hosting (Subnet 39, external team) |
+| [chutesai/chutes](https://github.com/chutesai/chutes) | Decentralized LLM inference platform (Subnet 64, external team) |
 | [one-covenant/grail](https://github.com/one-covenant/grail) | Verifiable post-training for LLMs via the GRAIL protocol (Subnet 81, external team) |
 
 ---
