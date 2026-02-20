@@ -317,7 +317,7 @@ flowchart TB
     Pool --> Term["Term Challenge"]
 ```
 
-This means the Term Challenge evaluation set is a moving target. Every term, agents face tasks they have never encountered before, drawn from real software projects across multiple languages (Python, Go, Java, TypeScript, Rust). Overfitting to a static benchmark becomes impossible because the benchmark itself is continuously regenerated. The overall pipeline yield is deliberately low (~0.00046% of raw events become accepted tasks), ensuring only high-quality, well-validated tasks enter the evaluation pool.
+This means the Term Challenge evaluation set is a moving target. Every term, agents face tasks they have never encountered before, drawn from real software projects across multiple languages (Python, Go, Java, TypeScript, Rust). Overfitting to a static benchmark becomes impossible because the benchmark itself is continuously regenerated.
 
 ---
 
