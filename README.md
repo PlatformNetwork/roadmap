@@ -294,16 +294,25 @@ A critical weakness of static benchmarks like SWE-bench is that agents can overf
 The pipeline mines GitHub Archive for recently merged PRs, enriches them with repository metadata, classifies difficulty via LLM, extracts patches, and generates tests inside Docker-isolated containers through a multi-turn agentic loop (up to 200 turns of tool use). Every generated task is validated through a dual-commit process: tests must fail on the pre-PR commit and pass on the post-PR commit. Only tasks that survive this validation and pass a quality score threshold ($\geq 0.30$) are accepted into the evaluation pool.
 
 ```mermaid
-flowchart LR
-    GH["GitHub Archive"] -->|merged PRs| Filter["Pre-filter"]
-    Filter --> Enrich["Enrich"]
-    Enrich --> Classify["LLM Classify"]
-    Classify --> Patch["Extract Patch"]
-    Patch --> Docker["Docker Test Gen"]
-    Docker --> Dual{"Dual-commit?"}
-    Dual -->|Fail| Reject["Reject"]
-    Dual -->|Pass| Quality{"Score ≥ 0.30?"}
-    Quality -->|No| Reject
+flowchart TB
+    subgraph Mining["1. Mining"]
+        GH["GitHub Archive"] --> Filter["Pre-filter"]
+        Filter --> Enrich["Enrich"]
+    end
+
+    subgraph Generation["2. Test Generation"]
+        Classify["LLM Classify"] --> Patch["Extract Patch"]
+        Patch --> Docker["Docker Test Gen"]
+    end
+
+    subgraph Validation["3. Validation"]
+        Dual{"Dual-commit?"}
+        Quality{"Score ≥ 0.30?"}
+        Dual -->|Pass| Quality
+    end
+
+    Mining --> Generation
+    Generation --> Validation
     Quality -->|Yes| Pool["Evaluation Pool"]
     Pool --> Term["Term Challenge"]
 ```
